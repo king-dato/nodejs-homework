@@ -1,87 +1,44 @@
 import express from "express";
+import { ctrlWrapper } from "../../helpers/ctrlWrapper.js";
 // prettier-ignore
-import {listContacts, getContactById, removeContact, addContact, updateContactById} from "../../models/contacts.js";
-import { contactValidation } from "../../validations/validation.js";
-import { httpError } from "../../helpers/httpError.js";
+import { addContact, deleteContactById, getAllContacts, getContactById, updateContactById, updateStatusContact } from "../../controllers/contactsController.js";
+import { authenticateToken } from "../../middlewares/authenticateToken.js";
 
 const router = express.Router();
 
-router.get("/", async (req, res, next) => {
-  try {
-    const result = await listContacts();
-    res.json(result);
-  } catch (error) {
-    next(error);
-  }
-});
+/* GET: // http://localhost:3000/api/contacts */
+router.get("/", authenticateToken, ctrlWrapper(getAllContacts));
 
-router.get("/:contactId", async (req, res, next) => {
-  try {
-    const { contactId } = req.params;
-    const result = await getContactById(contactId);
+/* GET: // http://localhost:3000/api/contacts/:contactId */
+router.get("/:contactId", authenticateToken, ctrlWrapper(getContactById));
 
-    if (!result) {
-      throw httpError(404);
-    }
+/* POST: // http://localhost:3000/api/contacts/ 
+{
+    "name": "Marvin Pacis",
+    "email": "marvinpacis@example.com",
+    "phone": "(639) 840-6611"
+} 
+*/
+router.post("/", authenticateToken, ctrlWrapper(addContact));
 
-    res.json(result);
-  } catch (error) {
-    next(error);
-  }
-});
+/* DELETE: // http://localhost:3000/api/contacts/:contactId */
+router.delete("/:contactId", authenticateToken, ctrlWrapper(deleteContactById));
 
-router.post("/", async (req, res, next) => {
-  try {
-    // Preventing lack of necessary data
-    const { error } = contactValidation.validate(req.body);
-    if (error) {
-      throw httpError(400, "missing required name field");
-    }
+/* PUT: // http://localhost:3000/api/contacts/:contactId 
+{
+    "name": "Joanna Shaw",
+    "email": "joannashaw@example.com",
+    "phone": "(639) 777-8819"
+} 
+*/
+router.put("/:contactId", authenticateToken, ctrlWrapper(updateContactById));
 
-    const result = await addContact(req.body);
-    res.status(201).json(result);
-  } catch (error) {
-    next(error);
-  }
-});
+/* PATCH: // http://localhost:3000/api/contacts/:contactId/favorite
+{
+    "favorite": true,
+}
+*/
+// prettier-ignore
+router.patch("/:contactId/favorite", authenticateToken, ctrlWrapper(updateStatusContact));
 
-router.delete("/:contactId", async (req, res, next) => {
-  try {
-    const { contactId } = req.params;
-    const result = await removeContact(contactId);
-
-    if (!result) {
-      throw httpError(404);
-    }
-
-    res.json({
-      message: "Contact deleted",
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.put("/:contactId", async (req, res, next) => {
-  try {
-    // Preventing lack of necessary data
-    const { error } = contactValidation.validate(req.body);
-    if (error) {
-      throw httpError(400, "missing fields");
-    }
-
-    const { contactId } = req.params;
-    const result = await updateContactById(contactId, req.body);
-
-    if (!result) {
-      throw httpError(404);
-    }
-
-    res.json(result);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// module.exports = router;
 export { router };
